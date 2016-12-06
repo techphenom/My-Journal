@@ -1,4 +1,5 @@
 from PyQt4 import QtCore, QtGui
+import os
 
 try:
     _fromUtf8 = QtCore.QString.fromUtf8
@@ -87,7 +88,10 @@ class Ui_MainWindow(object):
         self.actionOpen.triggered.connect(self.file_open)
         self.actionExit.setShortcut("Ctrl+Q")
         self.actionExit.triggered.connect(self.exit_app)
-        self.calendarWidget.clicked[QtCore.QDate].connect(self.show_date)
+        self.calendarWidget.clicked[QtCore.QDate].connect(self.cal_clicked_open)
+        self.actionNew.setShortcut("Ctrl+N")
+        self.actionNew.triggered.connect(self.file_new)
+        self.actionAbout.triggered.connect(self.about)
 
     def retranslateUi(self, MainWindow):
         MainWindow.setWindowTitle(_translate("MainWindow", "My Journal", None))
@@ -104,19 +108,49 @@ class Ui_MainWindow(object):
         self.actionExit.setText(_translate("MainWindow", "Exit", None))
         self.actionAbout.setText(_translate("MainWindow", "About", None))
 
+    def about(self):
+        aboutBox = QtGui.QMessageBox()
+        aboutBox.setText("My Journal v 0.1")
+        aboutBox.setWindowTitle("About")
+        aboutBox.setDetailedText("Author: Russell Streitz \nYear: 2016\nLicense: MIT License")
+        aboutBox.exec_()
+    def file_new(self):
+        self.textEdit.clear()
+
+
+
     def file_open(self):
         name = QtGui.QFileDialog.getOpenFileName(self.window, 'Open File')
         file = open(name, 'r')
         with file:
             text = file.read()
             self.textEdit.setText(text)
+        date = name[-14:-4]
+        self.calendarWidget.setSelectedDate(QtCore.QDate.fromString(date,
+                                                             'yyyy_MM_dd'))
+
+    def cal_clicked_open(self):
+        name = 'entries/{}.txt'.format(self.calendarWidget.selectedDate().toString('yyyy_MM_dd'))
+        try:
+            file = open(name, 'r')
+            with file:
+                text = file.read()
+                self.textEdit.setText(text)
+        except:
+            self.textEdit.clear()
 
     def file_save(self):
-        name = QtGui.QFileDialog.getSaveFileName(self.window, 'Save File')
+        if not os.path.exists("entries"):
+            os.makedirs("entries")
+        name = 'entries/{}.txt'.format(self.calendarWidget.selectedDate().toString('yyyy_MM_dd'))
         file = open(name, 'w')
         text = self.textEdit.toPlainText()
         file.write(text)
         file.close()
+        message = QtGui.QMessageBox()
+        message.setText("Journal entry has been saved in 'entries' directory.")
+        message.setWindowTitle("Save Message")
+        message.exec_()
 
     def exit_app(self):
         choice = QtGui.QMessageBox.question(self.window, 'Exit',
@@ -127,9 +161,6 @@ class Ui_MainWindow(object):
             sys.exit()
         else:
             pass
-
-    def show_date(self):
-        print(self.calendarWidget.selectedDate())
 
 if __name__ == "__main__":
     import sys
